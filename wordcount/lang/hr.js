@@ -6,6 +6,7 @@ CKEDITOR.plugins.setLang('wordcount', 'hr', {
     WordCount: 'Riječi:',
     CharCount: 'Znakova:',
     CharCountWithHTML: 'Znakova (uključujući HTML):',
+    limit: 'Ograničenje:',
     Paragraphs: 'Paragraphs:',
     title: 'Statistika'
 });

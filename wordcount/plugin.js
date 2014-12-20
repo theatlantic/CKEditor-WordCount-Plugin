@@ -10,7 +10,9 @@ CKEDITOR.plugins.add('wordcount', {
         var defaultFormat = '',
             intervalId,
             lastWordCount,
-            lastCharCount = 0;
+            lastCharCount = 0,
+            limitReachedNotified = false,
+            limitRestoredNotified = false;
 
         // Default Config
         var defaultConfig = {
@@ -18,6 +20,8 @@ CKEDITOR.plugins.add('wordcount', {
             showWordCount: true,
             showCharCount: false,
             countSpacesAsChars: false,
+            charLimit: 'unlimited',
+            wordLimit: 'unlimited',
             countHTML: false
         };
 
@@ -34,6 +38,10 @@ CKEDITOR.plugins.add('wordcount', {
 
         if (config.showWordCount) {
             defaultFormat += editor.lang.wordcount.WordCount + ' %wordCount%';
+
+            if (config.wordLimit != 'unlimited') {
+                defaultFormat += ' (' + editor.lang.wordcount.limit + ' ' + config.wordLimit + ')';
+            }
         }
 
         if (config.showCharCount && config.showWordCount) {
@@ -44,6 +52,10 @@ CKEDITOR.plugins.add('wordcount', {
             var charLabel = editor.lang.wordcount[config.countHTML ? 'CharCountWithHTML' : 'CharCount'];
 
             defaultFormat += charLabel + ' %charCount%';
+
+            if (config.charLimit != 'unlimited') {
+                defaultFormat += ' (' + editor.lang.wordcount.limit + ' ' + config.charLimit + ')';
+            }
         }
 
         var format = defaultFormat;
@@ -147,11 +159,51 @@ CKEDITOR.plugins.add('wordcount', {
 
                 lastWordCount = wordCount;
                 lastCharCount = charCount;
+
+                // Check for word limit
+                if (config.showWordCount && wordCount > config.wordLimit) {
+                    limitReached(editor, limitReachedNotified);
+                } else if (config.showWordCount && wordCount == config.wordLimit) {
+                    // create snapshot to make sure only the content after the limit gets deleted
+                    editorInstance.fire('saveSnapshot');
+                } else if (!limitRestoredNotified && wordCount < config.wordLimit) {
+                    limitRestored(editor);
+                }
+
+                // Check for char limit
+                if (config.showCharCount && charCount > config.charLimit) {
+                       limitReached(editor, limitReachedNotified);
+                   } else if (config.showCharCount && charCount == config.charLimit) {
+                       // create snapshot to make sure only the content after the limit gets deleted
+                       editorInstance.fire('saveSnapshot');
+                   } else if (!limitRestoredNotified && charCount < config.charLimit) {
+                       limitRestored(editor);
+                   }
             }
 
 
             return true;
         }
+
+        function limitReached(editorInstance, notify) {
+             limitReachedNotified = true;
+             limitRestoredNotified = false;
+             editorInstance.execCommand('undo');
+             if (!notify) {
+                counterElement(editorInstance).className = "cke_wordcount cke_wordcountLimitReached";
+                editorInstance.fire('limitReached', {}, editor);
+             }
+             // lock editor
+             editorInstance.config.Locked = 1;
+         }
+
+         function limitRestored(editorInstance) {
+             limitRestoredNotified = true;
+             limitReachedNotified = false;
+             counterElement(editorInstance).className = "cke_wordcount";
+             // unlock editor
+             editorInstance.config.Locked = 0;
+         }
 
         editor.on('key', function(event) {
             if (editor.mode === 'source') {

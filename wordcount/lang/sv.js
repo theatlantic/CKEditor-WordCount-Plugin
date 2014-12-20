@@ -6,6 +6,7 @@ CKEDITOR.plugins.setLang('wordcount', 'sv', {
     WordCount: 'Ord:',
     CharCount: 'Tecken:',
     CharCountWithHTML: 'Tecken (inklusive HTML):',
+    limit: 'Begränsning:',
     Paragraphs: 'Paragraphs:',
     title: 'Statistik'
 });
