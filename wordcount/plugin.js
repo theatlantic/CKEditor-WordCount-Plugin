@@ -23,7 +23,9 @@ CKEDITOR.plugins.add('wordcount', {
             countSpacesAsChars: false,
             charLimit: 'unlimited',
             wordLimit: 'unlimited',
-            countHTML: false
+            countHTML: false,
+            // Whether to forcefully prevent the user from exceeding the char/word limit
+            hardLimit: false
         };
 
         // Get Config & Lang
@@ -190,7 +192,7 @@ CKEDITOR.plugins.add('wordcount', {
             if ((config.wordLimit != "unlimited" && wordCount > config.wordLimit && deltaWord > 0) ||
                 (config.charLimit != "unlimited" && charCount > config.charLimit && deltaChar > 0)) {
                 limitReached(editorInstance, limitReachedNotified);
-            } else if (!limitRestoredNotified && 
+            } else if (!limitRestoredNotified &&
                         (config.wordLimit == "unlimited" || wordCount < config.wordLimit) &&
                         (config.charLimit == "unlimited" || charCount < config.charLimit) ) {
                 limitRestored(editorInstance);
@@ -205,24 +207,26 @@ CKEDITOR.plugins.add('wordcount', {
             limitReachedNotified = true;
             limitRestoredNotified = false;
 
-            editorInstance.loadSnapshot(snapShot);
+            if (config.hardLimit) {
+                editorInstance.loadSnapshot(snapShot);
+                // lock editor
+                editorInstance.config.Locked = 1;
+            }
 
             if (!notify) {
                counterElement(editorInstance).className = "cke_wordcount cke_wordcountLimitReached";
                editorInstance.fire('limitReached', {}, editor);
             }
-            
-            // lock editor
-            editorInstance.config.Locked = 1;
+
         }
 
         function limitRestored(editorInstance) {
-            
+
             limitRestoredNotified = true;
             limitReachedNotified = false;
             editorInstance.config.Locked = 0;
             snapShot = editor.getSnapshot();
-            
+
             counterElement(editorInstance).className = "cke_wordcount";
         }
 
